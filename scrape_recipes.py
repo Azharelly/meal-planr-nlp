@@ -120,13 +120,13 @@ if __name__ == "__main__":
         print(f"Scraping: {url}")
         recipe = extract_schema_recipe(url)
         if recipe:
-            print(f"✅ {recipe['name']} — {len(recipe['ingredients'])} ingredientes")
+            print(f" {recipe['name']} — {len(recipe['ingredients'])} ingredientes")
             recipes.append(recipe)
         else:
-            print(f"❌ No se encontró Schema.org")
+            print(f"Couldn't find Schema.org")
         time.sleep(1)
     
-    print(f"\nTotal recetas: {len(recipes)}")
+    print(f"\nTotal recipies: {len(recipes)}")
     
     tasks = recipes_to_label_studio_tasks(recipes)
     print(f"Total tareas: {len(tasks)}")
@@ -134,4 +134,4 @@ if __name__ == "__main__":
     with open(r"data\annotated\tasks_en.json", "w", encoding="utf-8") as f:
         json.dump(tasks, f, ensure_ascii=False, indent=2)
     
-    print("Guardado en data/annotated/tasks_en.json")
+    print("Saved in data/annotated/tasks_en.json")

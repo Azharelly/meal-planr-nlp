@@ -96,3 +96,18 @@ async def extract_recipe(file: UploadFile = File(...)):
 @app.get("/health")
 async def health():
     return {"status": "ok", "model": "meal-planr-nlp-v1"}
+
+from scrape_recipes import extract_schema_recipe
+
+@app.post("/extract-url")
+async def extract_from_url(data: dict):
+    """Extrae receta desde una URL"""
+    url = data.get("url")
+    if not url:
+        raise HTTPException(status_code=400, detail="URL is required")
+    
+    recipe = extract_schema_recipe(url)
+    if not recipe:
+        raise HTTPException(status_code=404, detail="No recipe found at this URL")
+    
+    return recipe
