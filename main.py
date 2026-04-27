@@ -83,7 +83,6 @@ async def extract_recipe(file: UploadFile = File(...)):
         else:
             import pytesseract
             from PIL import Image
-            pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
             full_text = pytesseract.image_to_string(Image.open(tmp_path), lang="spa+eng")
         
         recipe = parse_entities(full_text)
