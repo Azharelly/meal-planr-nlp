@@ -56,8 +56,7 @@ def create_docbin(training_data: list, nlp) -> DocBin:
 
 if __name__ == "__main__":
     nlp = spacy.blank("en")
-    
-    # Cargar ambos exports
+
     print("Loading English data...")
     data_en = convert_label_studio_to_spacy(r"data\annotated\export_en.json")
     print(f"English tasks: {len(data_en)}")
@@ -76,7 +75,7 @@ if __name__ == "__main__":
     
     print(f"Train: {len(train_data)} | Dev: {len(dev_data)}")
     
-    # Crear DocBins
+
     train_db = create_docbin(train_data, nlp)
     dev_db = create_docbin(dev_data, nlp)
     
