@@ -8,22 +8,20 @@ import re
 from extract_text import extract_text_from_pdf
 from bs4 import BeautifulSoup
 from scrape_recipes import extract_schema_recipe
-
+ 
 app = FastAPI(title="MealPlanr NLP API")
-
+ 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Cargar modelo entrenado
+ 
 nlp = spacy.load("models/model-best")
-
+ 
 def parse_entities(text: str) -> dict:
     doc = nlp(text)
-    
     result = {
         "name": "",
         "ingredients": [],
@@ -33,9 +31,7 @@ def parse_entities(text: str) -> dict:
         "servings": None,
         "imageUrl": None
     }
-    
     current_ingredient = {"name": "", "quantity": "", "unit": ""}
-    
     for ent in doc.ents:
         if ent.label_ == "RECIPE_NAME":
             result["name"] = ent.text
@@ -55,21 +51,18 @@ def parse_entities(text: str) -> dict:
             result["prepTime"] = ent.text
         elif ent.label_ == "SERVINGS":
             result["servings"] = ent.text
-    
-    # Guardar el último ingrediente pendiente
     if current_ingredient["name"] and len(current_ingredient["name"]) > 2:
         ing_str = f"{current_ingredient['quantity']}{current_ingredient['unit']} {current_ingredient['name']}".strip()
         result["ingredients"].append(ing_str)
-    
     return result
-
-
+ 
+ 
 @app.post("/extract")
 async def extract_recipe(file: UploadFile = File(...)):
     allowed_types = ["application/pdf", "image/jpeg", "image/png", "image/jpg"]
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="File type not supported")
-
+ 
     suffix = ".pdf" if "pdf" in file.content_type else ".png"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         content = await file.read()
@@ -83,8 +76,7 @@ async def extract_recipe(file: UploadFile = File(...)):
         else:
             import pytesseract
             from PIL import Image
-            # OCR extraction - tesseract installed via Dockerfile 1
-            # OCR extraction - tesseract installed via Dockerfile
+            pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
             full_text = pytesseract.image_to_string(Image.open(tmp_path), lang="spa+eng")
         
         recipe = parse_entities(full_text)
@@ -93,44 +85,39 @@ async def extract_recipe(file: UploadFile = File(...)):
         
     finally:
         os.unlink(tmp_path)
-
-
+ 
+ 
 @app.get("/health")
 async def health():
     return {"status": "ok", "model": "meal-planr-nlp-v1"}
-
-
+ 
+ 
 @app.post("/extract-url")
 async def extract_from_url(data: dict):
     url = data.get("url")
     if not url:
         raise HTTPException(status_code=400, detail="URL is required")
     
-    # Intentar Schema.org primero
-    print(f"🔍 Intentando Schema.org para: {url}")
+    print(f"Intentando Schema.org para: {url}")
     recipe = extract_schema_recipe(url)
     
     if recipe:
-        print("✅ Schema.org funcionó")
+        print("Schema.org funciono")
         return recipe
     
-    print("⚠️ Schema.org falló, usando spaCy")
+    print("Schema.org fallo, usando spaCy")
     
-    # Fallback: scraping + spaCy
     try:
         headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
-        
-        # Limpiar texto
         text = soup.get_text(separator=" ", strip=True)
-        text = re.sub(r'[^\x00-\x7F]+', ' ', text)  # quitar no-ASCII
-        text = re.sub(r'\s+', ' ', text).strip()      # normalizar espacios
-        text = text[:5000]                             # limitar tamaño
-        
+        text = re.sub(r'[^\x00-\x7F]+', ' ', text)
+        text = re.sub(r'\s+', ' ', text).strip()
+        text = text[:5000]
         recipe = parse_entities(text)
         return recipe
         
     except Exception as e:
-        print(f"❌ Error en fallback: {e}")
+        print(f"Error en fallback: {e}")
         raise HTTPException(status_code=404, detail="Could not extract recipe")
