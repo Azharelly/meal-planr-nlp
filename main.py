@@ -83,6 +83,7 @@ async def extract_recipe(file: UploadFile = File(...)):
         else:
             import pytesseract
             from PIL import Image
+            # OCR extraction - tesseract installed via Dockerfile
             full_text = pytesseract.image_to_string(Image.open(tmp_path), lang="spa+eng")
         
         recipe = parse_entities(full_text)
